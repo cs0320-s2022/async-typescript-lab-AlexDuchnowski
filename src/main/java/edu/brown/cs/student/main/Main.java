@@ -6,10 +6,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.naming.spi.DirStateFactory.Result;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import freemarker.template.Configuration;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -77,6 +85,8 @@ public final class Main {
       return "OK";
     });
 
+    Spark.post("/results", new ResultsHandler());
+
     // Allows requests from any domain (i.e., any URL). This makes development
     // easier, but it’s not a good idea for deployment.
     Spark.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
@@ -110,13 +120,28 @@ public final class Main {
       // TODO: Get JSONObject from req and use it to get the value of the sun, moon,
       // and rising
       // for generating matches
-
-      // TODO: use the MatchMaker.makeMatches method to get matches
-
-      // TODO: create an immutable map using the matches
-
-      // TODO: return a json of the suggestions (HINT: use GSON.toJson())
-      Gson GSON = new Gson();
+      JSONObject reqJson;
+      String sun;
+      String moon;
+      String rising;
+      List<String> matches;
+      Map<String, Object> matchesMap;
+      try {
+        // Put the request's body in JSON format
+        reqJson = new JSONObject(req.body());
+        // TODO: use the MatchMaker.makeMatches method to get matches
+        sun = reqJson.getString("sun");
+        moon = reqJson.getString("moon");
+        rising = reqJson.getString("rising");
+        matches = MatchMaker.makeMatches(sun, moon, rising);
+        // TODO: create an immutable map using the matches
+        matchesMap = ImmutableMap.of("matches", matches);
+        // TODO: return a json of the suggestions (HINT: use GSON.toJson())
+        Gson GSON = new Gson();
+        return GSON.toJson(matchesMap);
+      } catch (JSONException e) {
+        e.printStackTrace();
+      }
       return null;
     }
   }
